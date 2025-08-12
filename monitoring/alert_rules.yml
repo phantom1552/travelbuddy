@@ -1,0 +1,106 @@
+groups:
+  - name: ai-trip-checklist-alerts
+    rules:
+      # Application Health Alerts
+      - alert: ApplicationDown
+        expr: up{job="ai-trip-checklist-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI Trip Checklist API is down"
+          description: "The AI Trip Checklist API has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }} errors per second over the last 5 minutes."
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }} seconds over the last 5 minutes."
+
+      # Resource Usage Alerts
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% of the limit."
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% over the last 5 minutes."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% full."
+
+      # API Specific Alerts
+      - alert: GroqAPIFailures
+        expr: rate(groq_api_requests_total{status="error"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Groq API failure rate"
+          description: "Groq API failure rate is {{ $value }} failures per second."
+
+      - alert: AuthenticationFailures
+        expr: rate(auth_failures_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures per second."
+
+      # Database Alerts (if using database)
+      - alert: DatabaseConnectionFailures
+        expr: rate(database_connection_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection failures"
+          description: "Database connection failure rate is {{ $value }} failures per second."
+
+      # Security Alerts
+      - alert: RateLimitExceeded
+        expr: rate(rate_limit_exceeded_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limit frequently exceeded"
+          description: "Rate limit exceeded {{ $value }} times per second over the last 5 minutes."
+
+      - alert: SuspiciousActivity
+        expr: rate(suspicious_requests_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious request rate is {{ $value }} requests per second."
